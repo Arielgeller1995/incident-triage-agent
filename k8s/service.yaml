@@ -1,0 +1,23 @@
+# service.yaml — exposes the Deployment's Pods on a stable network address.
+
+apiVersion: v1   # Core API group (no group prefix needed for v1 resources).
+kind: Service    # A Service gives Pods a single, stable IP and DNS name.
+
+metadata:
+  name: k8s-triage-agent   # DNS name inside the cluster: k8s-triage-agent.<namespace>.svc.cluster.local
+
+spec:
+  type: ClusterIP   # ClusterIP (the default) makes the service reachable only from
+                    # inside the cluster. Use NodePort or LoadBalancer to expose
+                    # externally; for local testing we forward with kubectl port-forward.
+
+  selector:
+    # Routes traffic to any Pod whose labels match this selector.
+    # Must match the labels on the Pods created by the Deployment.
+    app: k8s-triage-agent
+
+  ports:
+    - protocol: TCP
+      port: 8000        # Port exposed on the ClusterIP — what callers connect to.
+      targetPort: 8000  # Port on the Pod to forward traffic to (matches containerPort
+                        # in deployment.yaml and uvicorn's --port in the Dockerfile).
