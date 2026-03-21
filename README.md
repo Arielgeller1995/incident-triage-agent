@@ -24,7 +24,7 @@ A retrieval-augmented Kubernetes incident triage service. Given an error log, it
 
 ## 1. Project Overview
 
-On-call engineers spend significant time diagnosing Kubernetes failures that match well-known patterns. This service automates the first step: given a raw error log, it finds the matching runbook content and asks Claude to produce a structured diagnosis — without hallucinating information that isn't in the runbook.
+On-call engineers spend significant time diagnosing failures that match well-known patterns. This service automates the first step: given a raw error log, it finds the matching runbook content and asks Claude to produce a structured diagnosis — without hallucinating information that isn't in the runbook.
 
 **Key properties:**
 
