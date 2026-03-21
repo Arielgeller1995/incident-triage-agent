@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -35,12 +35,6 @@ app.add_middleware(
 
 # --- schemas -----------------------------------------------------------
 
-class TriageRequest(BaseModel):
-    error_log: str
-    component: str | None = None
-    severity: str | None = None
-
-
 class TriageResponse(BaseModel):
     summary: str
     confidence: float
@@ -55,10 +49,23 @@ def health():
     return {"status": "ok"}
 
 
-@app.post("/triage", response_model=TriageResponse)
-def triage(request: TriageRequest):
+@app.post(
+    "/triage",
+    response_model=TriageResponse,
+    openapi_extra={
+        "requestBody": {
+            "required": True,
+            "content": {"text/plain": {"schema": {"type": "string"}}},
+        }
+    },
+)
+async def triage(request: Request):
+    body = await request.body()
+    error_log = body.decode()
+    if not error_log.strip():
+        raise HTTPException(status_code=422, detail="Request body must not be empty.")
     try:
-        result = run_triage(request.model_dump(), config)
+        result = run_triage(error_log, config)
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
     return TriageResponse(**result)

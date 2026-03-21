@@ -31,15 +31,29 @@ _LOW_SCORE_NOTE = (
 )
 
 
-def run_triage(incident: dict, config) -> dict:
+_NORMALIZE_PROMPT = (
+    "Extract the core error from this input and return a clean 1-2 sentence description "
+    "of what went wrong, suitable for searching a technical knowledge base. "
+    "Return only the description, nothing else."
+)
+
+
+def normalize_incident(raw_input: str, provider) -> str:
+    prompt = f"{_NORMALIZE_PROMPT}\n\n{raw_input}"
+    return provider.complete(prompt).strip()
+
+
+def run_triage(error_log: str, config) -> dict:
     documents = load_documents(config.knowledge_base_path)
     chunks = chunk_documents(documents)
 
     retriever = TFIDFRetriever()
     retriever.build_index(chunks)
 
+    normalized_query = normalize_incident(error_log, config.llm_provider)
+
     top_k = getattr(config, "top_k", 3)
-    results = retriever.retrieve(incident["error_log"], top_k=top_k)
+    results = retriever.retrieve(normalized_query, top_k=top_k)
 
     weak_retrieval = all(r["score"] < 0.1 for r in results)
 
@@ -52,7 +66,7 @@ def run_triage(incident: dict, config) -> dict:
 
     prompt = _PROMPT_TEMPLATE.format(
         context=context,
-        error_log=incident["error_log"],
+        error_log=error_log,
     )
 
     raw = config.llm_provider.complete(prompt)

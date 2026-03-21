@@ -1,6 +1,6 @@
 # k8s-triage-agent
 
-A retrieval-augmented Kubernetes incident triage service. Given an error log, it retrieves the most relevant runbook sections from a local knowledge base, grounds a structured LLM prompt in that context, and returns a JSON response with a root-cause summary, confidence score, concrete action items, and source attribution.
+A retrieval-augmented incident triage service running on kubernetes. Given an error log, it retrieves the most relevant runbook sections from a local knowledge base, grounds a structured LLM prompt in that context, and returns a JSON response with a root-cause summary, confidence score, concrete action items, and source attribution.
 
 ---
 
@@ -31,7 +31,7 @@ On-call engineers spend significant time diagnosing failures that match well-kno
 - **Grounded** — the LLM is instructed to prioritize retrieved context. When relevant docs are found, it answers only from them. When retrieval is weak, it falls back to general knowledge but signals this with a lower confidence score.
 - **Auditable** — every response includes the source files used
 - **Provider-agnostic** — any backend that implements a one-method interface can replace Claude
-- **Stateless** — no database required; the knowledge base is plain Markdown files on disk
+- **Stateless** — no database required; the knowledge base is plain Markdown files on disk 
 
 ---
 
@@ -395,6 +395,7 @@ curl http://localhost:8000/health
 
 ## 11. Docker
 
+Run those commands 
 ```bash
 # Build
 docker build -t k8s-triage-agent:latest .
