@@ -28,7 +28,7 @@ On-call engineers spend significant time diagnosing failures that match well-kno
 
 **Key properties:**
 
-- **Grounded** — the LLM is explicitly instructed to answer only from retrieved context
+- **Grounded** — the LLM is instructed to prioritize retrieved context. When relevant docs are found, it answers only from them. When retrieval is weak, it falls back to general knowledge but signals this with a lower confidence score.
 - **Auditable** — every response includes the source files used
 - **Provider-agnostic** — any backend that implements a one-method interface can replace Claude
 - **Stateless** — no database required; the knowledge base is plain Markdown files on disk
