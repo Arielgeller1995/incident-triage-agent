@@ -5,12 +5,14 @@ from triage.chunker import chunk_documents
 from triage.retriever import TFIDFRetriever
 
 _PROMPT_TEMPLATE = """\
-You are a Kubernetes incident triage assistant.
+You are an incident triage assistant.
 Using ONLY the context below, analyze the incident and respond with a JSON object.
 
 === RETRIEVED CONTEXT ===
 {context}
 === END CONTEXT ===
+
+IMPORTANT: Never mention the domain or technology of the retrieved context if it is different from the incident domain. If the knowledge base context is irrelevant to the incident, only say that no relevant documentation was found — do not describe what the documentation IS about or name any technologies from it.
 
 === INCIDENT ===
 {error_log}
@@ -22,7 +24,7 @@ Respond with ONLY a valid JSON object — no markdown, no explanation — with t
 - "action_items": list of strings, concrete remediation steps
 - "sources": list of source file paths referenced from the context
 
-Do not invent information not present in the context.\
+Do not invent information not present in the context.
 """
 
 _LOW_SCORE_NOTE = (
@@ -97,7 +99,8 @@ def run_triage(error_log: str, config) -> dict:
     top_k = getattr(config, "top_k", 3)
     results = retriever.retrieve(normalized_query, top_k=top_k)
 
-    weak_retrieval = all(r["score"] < 0.1 for r in results)
+    if all(r["score"] < 0.1 for r in results):
+        return _run_without_kb(error_log, config)
 
     context_parts = []
     for i, chunk in enumerate(results, start=1):
@@ -122,10 +125,6 @@ def run_triage(error_log: str, config) -> dict:
     if raw_conf <= 1.0:
         raw_conf = raw_conf * 100
     raw_conf = int(raw_conf)
-
-    if weak_retrieval:
-        raw_conf = min(raw_conf, 30)
-        response["summary"] = response.get("summary", "") + _LOW_SCORE_NOTE
 
     response.setdefault("sources", [r["source"] for r in results])
 
