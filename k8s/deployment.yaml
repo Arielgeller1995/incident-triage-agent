@@ -1,12 +1,12 @@
-# deployment.yaml — tells Kubernetes how to run the k8s-triage-agent container.
+# deployment.yaml — tells Kubernetes how to run the incident-triage-agent container.
 
 apiVersion: apps/v1   # The API group/version that owns the Deployment resource.
 kind: Deployment      # The resource type: a Deployment manages a set of identical Pods.
 
 metadata:
-  name: k8s-triage-agent   # Unique name for this Deployment within the namespace.
+  name: incident-triage-agent   # Unique name for this Deployment within the namespace.
   labels:
-    app: k8s-triage-agent  # Arbitrary key/value label; used by the Service selector below.
+    app: incident-triage-agent  # Arbitrary key/value label; used by the Service selector below.
 
 spec:
   replicas: 1   # Run exactly one Pod at a time. Increase for horizontal scaling.
@@ -15,19 +15,19 @@ spec:
     # The Deployment uses this selector to find the Pods it owns and manages.
     # Must match the labels in template.metadata.labels below.
     matchLabels:
-      app: k8s-triage-agent
+      app: incident-triage-agent
 
   template:
     # Pod template: every Pod created by this Deployment is built from this spec.
     metadata:
       labels:
-        app: k8s-triage-agent   # Must match selector.matchLabels above.
+        app: incident-triage-agent   # Must match selector.matchLabels above.
 
     spec:
       containers:
-        - name: k8s-triage-agent          # Name of the container inside the Pod.
-          image: k8s-triage-agent:latest  # Image name. Use the same tag you passed to
-                                          # `docker build -t k8s-triage-agent:latest .`
+        - name: incident-triage-agent          # Name of the container inside the Pod.
+          image: incident-triage-agent:latest  # Image name. Use the same tag you passed to
+                                          # `docker build -t incident-triage-agent:latest .`
                                           # or `kind load docker-image`.
           imagePullPolicy: Never          # Never pull from a registry; use the image
                                           # already loaded into kind's local cache.

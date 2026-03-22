@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from config import load_config
 from triage.pipeline import run_triage
@@ -37,7 +37,7 @@ app.add_middleware(
 
 class TriageResponse(BaseModel):
     summary: str
-    confidence: float
+    confidence: str = Field(description="0-100% score reflecting how grounded the answer is in the knowledge base")
     action_items: list[str]
     sources: list[str]
 

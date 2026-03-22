@@ -4,7 +4,7 @@ apiVersion: v1   # Core API group (no group prefix needed for v1 resources).
 kind: Service    # A Service gives Pods a single, stable IP and DNS name.
 
 metadata:
-  name: k8s-triage-agent   # DNS name inside the cluster: k8s-triage-agent.<namespace>.svc.cluster.local
+  name: incident-triage-agent   # DNS name inside the cluster: incident-triage-agent.<namespace>.svc.cluster.local
 
 spec:
   type: ClusterIP   # ClusterIP (the default) makes the service reachable only from
@@ -14,7 +14,7 @@ spec:
   selector:
     # Routes traffic to any Pod whose labels match this selector.
     # Must match the labels on the Pods created by the Deployment.
-    app: k8s-triage-agent
+    app: incident-triage-agent
 
   ports:
     - protocol: TCP

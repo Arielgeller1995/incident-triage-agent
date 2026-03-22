@@ -18,7 +18,7 @@ Using ONLY the context below, analyze the incident and respond with a JSON objec
 
 Respond with ONLY a valid JSON object — no markdown, no explanation — with these keys:
 - "summary": string, a concise description of the likely root cause
-- "confidence": number between 0.0 and 1.0
+- "confidence": integer between 0 and 100 (do not include a % sign)
 - "action_items": list of strings, concrete remediation steps
 - "sources": list of source file paths referenced from the context
 
@@ -44,7 +44,7 @@ _NO_KB_PROMPT = (
     "=== INCIDENT ===\n{error_log}\n=== END INCIDENT ===\n\n"
     "Respond with ONLY a valid JSON object with these keys:\n"
     '- "summary": concise description of the likely root cause\n'
-    '- "confidence": set this to 0.1\n'
+    '- "confidence": set this to 10\n'
     '- "action_items": list of concrete remediation steps\n'
     '- "sources": set this to []\n'
     "Do not use markdown or prose outside the JSON."
@@ -62,7 +62,7 @@ def _parse_llm_response(raw: str) -> dict:
                 return json.loads(match.group())
             except json.JSONDecodeError:
                 pass
-    return {"summary": raw, "confidence": 0.0, "action_items": [], "sources": []}
+    return {"summary": raw, "confidence": 0, "action_items": [], "sources": []}
 
 
 def _run_without_kb(error_log: str, config) -> dict:
@@ -71,7 +71,7 @@ def _run_without_kb(error_log: str, config) -> dict:
     response = _parse_llm_response(raw)
     return {
         "summary": response.get("summary", ""),
-        "confidence": 0.1,
+        "confidence": "10%",
         "action_items": response.get("action_items", []),
         "sources": [],
     }
@@ -114,15 +114,24 @@ def run_triage(error_log: str, config) -> dict:
     raw = config.llm_provider.complete(prompt)
     response = _parse_llm_response(raw)
 
+    raw_conf = response.get("confidence", 0)
+    try:
+        raw_conf = float(raw_conf)
+    except (TypeError, ValueError):
+        raw_conf = 0.0
+    if raw_conf <= 1.0:
+        raw_conf = raw_conf * 100
+    raw_conf = int(raw_conf)
+
     if weak_retrieval:
-        response["confidence"] = min(response.get("confidence", 0.0), 0.3)
+        raw_conf = min(raw_conf, 30)
         response["summary"] = response.get("summary", "") + _LOW_SCORE_NOTE
 
     response.setdefault("sources", [r["source"] for r in results])
 
     return {
         "summary": response.get("summary", ""),
-        "confidence": response.get("confidence", 0.0),
+        "confidence": f"{raw_conf}%",
         "action_items": response.get("action_items", []),
         "sources": response.get("sources", []),
     }
