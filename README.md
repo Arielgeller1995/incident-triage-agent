@@ -144,28 +144,6 @@ curl http://localhost:8000/health
 
 ---
 
-## Knowledge Base
-
-The `knowledge_base/` folder contains Markdown runbooks.
-
-**To add your own runbooks:** drop any `.md` or `.txt` file into the folder and restart the server. No indexing step required — the service loads and indexes on startup.
-
-**Demo vs Production:** For the demo, the `knowledge_base/` folder is baked into the Docker image. In production, mount it as an external volume so runbooks can be updated without rebuilding the image. Use `-v $(pwd)/knowledge_base:/app/knowledge_base` with Docker or a ConfigMap/PersistentVolume in Kubernetes.
-
-**Empty knowledge base:** If the folder is empty, the service skips retrieval entirely and falls back to Claude's general knowledge with confidence capped at 10% and empty sources.
-
-As an example, the service ships with seven `.md` files by default (editable at any time):
-```
-knowledge_base/
-├── crashloopbackoff.md
-├── database_connection.md
-├── api_authentication.md
-├── imagepullbackoff.md
-├── oomkilled.md
-├── probe_failures.md
-└── pending_pods.md
-```
----
 ## Architecture
 
 **Request flow:**
@@ -188,6 +166,30 @@ The service is built around a clean pipeline with separated concerns:
 | LLM Provider | `triage/providers/` | Abstraction layer — swap Claude for any model |
 
 ---
+
+## Knowledge Base
+
+The `knowledge_base/` folder contains Markdown runbooks.
+
+**To add your own runbooks:** drop any `.md` or `.txt` file into the folder and restart the server. No indexing step required — the service loads and indexes on startup.
+
+**Demo vs Production:** For the demo, the `knowledge_base/` folder is baked into the Docker image. In production, mount it as an external volume so runbooks can be updated without rebuilding the image. Use `-v $(pwd)/knowledge_base:/app/knowledge_base` with Docker or a ConfigMap/PersistentVolume in Kubernetes.
+
+**Empty knowledge base:** If the folder is empty, the service skips retrieval entirely and falls back to Claude's general knowledge with confidence capped at 10% and empty sources.
+
+As an example, the service ships with seven `.md` files by default (editable at any time):
+```
+knowledge_base/
+├── crashloopbackoff.md
+├── database_connection.md
+├── api_authentication.md
+├── imagepullbackoff.md
+├── oomkilled.md
+├── probe_failures.md
+└── pending_pods.md
+```
+---
+
 ## API Reference
 
 ### `POST /triage`
