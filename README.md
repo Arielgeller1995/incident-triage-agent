@@ -49,7 +49,7 @@ uvicorn main:app --reload --port 8000
 
 Visit http://localhost:8000/docs for the interactive Swagger UI.
 
-### Option B — Run on Kubernetes (production-like)
+### Option B — Run on Kubernetes 
 
 ```bash
 git clone https://github.com/Arielgeller1995/incident-triage-agent
@@ -166,44 +166,14 @@ knowledge_base/
 └── pending_pods.md
 ```
 ---
-
-## API Reference
-
-### `POST /triage`
-
-**Request** — send the raw error log as a plain text body:
-
-```bash
-curl -s -X POST http://localhost:8000/triage \
-  -H "Content-Type: text/plain" \
-  --data "Back-off restarting failed container payments-api ..." | jq .
-```
-
-**Response:**
-
-```json
-{
-  "summary": "The payments-api container is crashing on startup because it cannot authenticate with PostgreSQL. The Secret containing the database password is likely missing or has an incorrect key.",
-  "confidence": "91%",
-  "action_items": [
-    "kubectl get secret postgres-credentials -n production -o yaml",
-    "Verify the DB_PASSWORD key exists and matches the PostgreSQL user's actual password",
-    "kubectl rollout restart deployment/payments-api -n production"
-  ],
-  "sources": ["knowledge_base/crashloopbackoff.md"]
-}
-```
-
-### `GET /health`
-
-```bash
-curl http://localhost:8000/health
-# {"status":"ok"}
-```
-
----
-
 ## Architecture
+
+**Request flow:**
+1. Raw input received → Claude normalizes it into a clean search query
+2. Loader reads KB files → Chunker splits them → Retriever finds top matches
+3. If no matches found → skip to Claude with general knowledge fallback
+4. Matched chunks assembled into grounded prompt → sent to LLM provider
+5. Structured JSON returned with summary, confidence, action items, sources
 
 The service is built around a clean pipeline with separated concerns:
 
@@ -217,9 +187,47 @@ The service is built around a clean pipeline with separated concerns:
 | Retriever | `triage/retriever.py` | TF-IDF index + cosine similarity search |
 | LLM Provider | `triage/providers/` | Abstraction layer — swap Claude for any model |
 
-**Request flow:**
-1. Raw input received → Claude normalizes it into a clean search query
-2. Loader reads KB files → Chunker splits them → Retriever finds top matches
-3. If no matches found → skip to Claude with general knowledge fallback
-4. Matched chunks assembled into grounded prompt → sent to LLM provider
-5. Structured JSON returned with summary, confidence, action items, sources
+---
+## API Reference
+
+### `POST /triage`
+
+**Request** — send the raw error log as a plain text body:
+
+```bash
+curl -X POST http://localhost:8000/triage \
+  -H "Content-Type: text/plain" \
+  -d "OOMKilled exit code 137 payment-processor pod restarted 4 times"
+```
+
+**Response:**
+
+```json
+{
+  "summary": "The payment-processor pod is being killed by the Linux kernel OOM killer due to exceeding available memory, as evidenced by exit code 137 and OOMKilled status. Repeated restarts (4 times) suggest the pod may be entering or approaching CrashLoopBackOff.",
+  "confidence": "92%",
+  "action_items": [
+    "Confirm the OOMKill and note the timestamp: kubectl get pod payment-processor -o jsonpath='{.status.containerStatuses[0].lastState.terminated}'",
+    "Check current memory usage vs configured limits: kubectl top pod payment-processor --containers",
+    "Review the pod's resource configuration: kubectl get pod payment-processor -o jsonpath='{.spec.containers[0].resources}'",
+    "If no memory limit is set, add an appropriate memory limit to the container spec to prevent node-level OOM conditions",
+    "If a memory limit is already set, consider increasing it or investigate the application for memory leaks causing excessive consumption",
+    "Review application logs from previous container instances to identify any anomalies before the kill: kubectl logs payment-processor --previous"
+  ],
+  "sources": [
+    "knowledge_base/oomkilled.md",
+    "knowledge_base/crashloopbackoff.md"
+  ]
+}
+```
+
+### `GET /health`
+
+```bash
+curl http://localhost:8000/health
+# {"status":"ok"}
+```
+
+
+
+
