@@ -7,6 +7,8 @@ from triage.pipeline import run_triage
 from triage.providers.claude import ClaudeProvider
 from triage.providers.local import LocalProvider
 
+#This file has one job: receive HTTP requests and return HTTP responses. 
+#It knows nothing about retrieval or LLMs — it just wires everything together.
 # --- startup -----------------------------------------------------------
 
 _raw_config = load_config()
